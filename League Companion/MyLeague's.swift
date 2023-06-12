@@ -11,8 +11,12 @@ struct MyLeagueView: View {
     var body: some View {
         NavigationView {
             VStack {
-                NavigationLink(destination: LoginView()) {
-                    Text("Log In")
+                NavigationLink(destination: newLeauge()) {
+                    Text("Create new leauge").padding().background(Color.blue)
+                }
+                Spacer()
+                NavigationLink(destination: joinLeauge()){
+                    Text("Join a leauge").padding().background(Color.green)
                 }
             }
             
