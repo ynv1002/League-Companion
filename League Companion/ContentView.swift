@@ -1,90 +1,114 @@
-//
-//  ContentView.swift
-//  League Companion
-//
-//  Created by Yaniv Naggar on 6/8/23.
-//
-
 import SwiftUI
 import FirebaseAuth
 
 struct ContentView: View {
     @State private var username: String = ""
     @State private var password: String = ""
-    @State private var showMyLeagues = false // State variable for navigation
-    @State private var showLoginView = false // State variable for navigation to LoginView
+    @State private var showMyLeagues = false
+    @State private var showLoginView = false
 
     var body: some View {
-        if showMyLeagues {
-            MyLeaguesView() // This view should be navigated when signup/login is successful
-        } else if showLoginView {
-            LoginView() // This view should be navigated when login button is clicked
-        } else {
-            content
-        }
-    }
-    var content: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Image("logo") // Add your app logo image here
-                    .resizable()
-                    .frame(width: 100, height: 100)
-                
-                VStack(spacing: 16) {
-                    TextField("Username", text: $username)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(8)
-                    
-                    SecureField("Password", text: $password)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(8)
-                }
-                
-                Button(action: {
-                    // Handle sign up
-                    Auth.auth().createUser(withEmail: username, password: password) { (authResult, error) in
-                        if let error = error {
-                            // An error occurred while creating the user
-                            print("Error occurred: \(error.localizedDescription)")
-                        } else {
-                            // User was created successfully
-                            print("User created successfully!")
-                            self.showMyLeagues = true // Set the state variable to trigger navigation
-                        }
-                    }
-                }) {
-                    Text("Sign Up")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(8)
-                }
+        ZStack {
+            // Add a background gradient
+            LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
 
-                Button(action: {
-                    // Navigate to LoginView when button is clicked
-                    self.showLoginView = true
-                }) {
-                    Text("Log In")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(8)
-                }
+            if showMyLeagues {
+                MyLeagueView()
+            } else if showLoginView {
+                LoginView()
+            } else {
+                mainContent
+                    .padding()
             }
         }
     }
+
+    var mainContent: some View {
+        VStack(spacing: 20) {
+            logoImage
+            inputFields
+            signUpButton
+            logInButton
+        }
+        .padding(.horizontal, 24)
+        .foregroundColor(.white) // Set the default text color to white
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.3)) // Give the main content a semi-transparent background
+        .cornerRadius(20) // Round the corners
+        .shadow(color: .black, radius: 10, x: 0, y: 10) // Add a shadow
+    }
+
+    var logoImage: some View {
+        Image("logo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 150)
+            .shadow(color: .black, radius: 10) // Add a shadow to the logo
+    }
+
+    var inputFields: some View {
+        VStack(spacing: 16) {
+            TextField("Username", text: $username)
+                .textFieldStyle()
+
+            SecureField("Password", text: $password)
+                .textFieldStyle()
+        }
+    }
+
+    var signUpButton: some View {
+        Button(action: signUpAction) {
+            Text("Sign Up")
+                .buttonStyle()
+        }
+    }
+
+    var logInButton: some View {
+        Button(action: logInAction) {
+            Text("Log In")
+                .buttonStyle()
+        }
+    }
+
+    func signUpAction() {
+        // Handle sign up
+        Auth.auth().createUser(withEmail: username, password: password) { (authResult, error) in
+            if let error = error {
+                print("Error occurred: \(error.localizedDescription)")
+                // TODO: Show alert to the user
+            } else if let user = authResult?.user {
+                print("User created successfully!")
+                createUserDocument(user: user)
+                self.showMyLeagues = true
+            }
+        }
+    }
+
+    func logInAction() {
+        self.showLoginView = true
+    }
 }
 
-struct MyLeaguesView: View {
-    var body: some View {
-        Text("My Leagues")
-            .font(.largeTitle)
+extension View {
+    func textFieldStyle() -> some View {
+        self
+            .padding()
+            .background(Color.white.opacity(0.2))
+            .cornerRadius(8)
+            .shadow(color: .black, radius: 5, x: 0, y: 5)
+            .foregroundColor(.white)
+    }
+
+    func buttonStyle() -> some View {
+        self
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.white).opacity(0.1))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white, lineWidth: 1))
+            .shadow(color: .black, radius: 5, x: 0, y: 5)
     }
 }
 
