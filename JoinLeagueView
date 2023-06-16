@@ -1,0 +1,44 @@
+//
+//  JoinLeagueView.swift
+//  League Companion
+//
+//  Created by Yaniv Naggar on 6/12/23.
+//
+
+import SwiftUI
+
+struct JoinLeagueView: View {
+    @State private var searchQuery = ""
+
+    var body: some View {
+        ZStack {
+            // Add a background gradient
+            LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .top, endPoint: .bottom)
+                
+            
+            VStack(spacing: 20) {
+                Text("Join a League")
+                    .font(.largeTitle)
+                    .foregroundColor(.white)
+                    .padding()
+                    
+                TextField("Search league", text: $searchQuery)
+                    .textFieldStyle()
+
+                Button(action: {
+                    // Perform search and join request here
+                }) {
+                    Text("Request to Join")
+                        .buttonStyle()
+                }
+            }
+            .padding(.horizontal, 24)
+        }
+    }
+}
+
+struct JoinLeagueView_Previews: PreviewProvider {
+    static var previews: some View {
+        JoinLeagueView()
+    }
+}
