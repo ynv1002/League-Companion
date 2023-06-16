@@ -1,0 +1,77 @@
+//
+//  CreateNewLeagueView.swift
+//  League Companion
+//
+//  Created by Yaniv Naggar on 6/12/23.
+//
+
+import SwiftUI
+import Firebase
+
+struct CreateNewLeagueView: View {
+    @State private var leagueName = ""
+    @State private var numberOfTeams = 8
+    @State private var scoringType = "Standard"
+    @State private var draftType = "Snake"
+
+    let numberOfTeamsList = [8, 10, 12]
+    let scoringTypes = ["Standard", "PPR", "Half-PPR"]
+    let draftTypes = ["Snake", "Auction"]
+
+    var body: some View {
+        Form {
+            Section(header: Text("League Details")) {
+                TextField("League Name", text: $leagueName)
+
+                Picker("Number of Teams", selection: $numberOfTeams) {
+                    ForEach(numberOfTeamsList, id: \.self) { number in
+                        Text("\(number)")
+                    }
+                }
+
+                Picker("Scoring Type", selection: $scoringType) {
+                    ForEach(scoringTypes, id: \.self) { scoreType in
+                        Text(scoreType)
+                    }
+                }
+
+                Picker("Draft Type", selection: $draftType) {
+                    ForEach(draftTypes, id: \.self) { draft in
+                        Text(draft)
+                    }
+                }
+            }
+
+            Button(action: {
+                createLeague(leagueName: leagueName, numberOfTeams: numberOfTeams, scoringType: scoringType, draftType: draftType)
+            }) {
+                Text("Create League")
+            }
+        }
+        .navigationTitle("Create a League")
+    }
+
+    func createLeague(leagueName: String, numberOfTeams: Int, scoringType: String, draftType: String) {
+        let newLeagueID = Firestore.firestore().collection("leagues").document().documentID
+
+        Firestore.firestore().collection("leagues").document(newLeagueID).setData([
+            "leagueName": leagueName,
+            "numberOfTeams": numberOfTeams,
+            "scoringType": scoringType,
+            "draftType": draftType,
+            "teamIDs": [String]()
+        ]) { error in
+            if let error = error {
+                print("Error adding league: \(error)")
+            } else {
+                print("League added with ID: \(newLeagueID)")
+            }
+        }
+    }
+}
+
+struct CreateNewLeagueView_Previews: PreviewProvider {
+    static var previews: some View {
+        CreateNewLeagueView()
+    }
+}
