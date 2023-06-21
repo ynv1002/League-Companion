@@ -4,69 +4,119 @@
 //
 //  Created by Yaniv Naggar on 6/12/23.
 //
-
 import SwiftUI
 import Firebase
 
 struct CreateNewLeagueView: View {
     @State private var leagueName = ""
-    @State private var numberOfTeams = 8
-    @State private var scoringType = "Standard"
-    @State private var draftType = "Snake"
-
-    let numberOfTeamsList = [8, 10, 12]
-    let scoringTypes = ["Standard", "PPR", "Half-PPR"]
-    let draftTypes = ["Snake", "Auction"]
+    @State private var numberOfTeams = 10 // Default to 10 teams
+    @State private var leagueCreatedSuccessfully = false
+    @State private var showExistingLeagueAlert = false
 
     var body: some View {
-        Form {
-            Section(header: Text("League Details")) {
+        ZStack {
+            LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .topLeading, endPoint: .bottomTrailing)
+
+            VStack(spacing: 20) {
+                Text("Create a League")
+                    .font(.largeTitle)
+                    .padding()
+                    .foregroundColor(.white)
+
                 TextField("League Name", text: $leagueName)
+                    .textFieldStyleCreateNewLeague()
 
-                Picker("Number of Teams", selection: $numberOfTeams) {
-                    ForEach(numberOfTeamsList, id: \.self) { number in
-                        Text("\(number)")
-                    }
+                Button(action: {
+                    createLeague(leagueName: leagueName, numberOfTeams: numberOfTeams)
+                }) {
+                    Text("Create League")
                 }
-
-                Picker("Scoring Type", selection: $scoringType) {
-                    ForEach(scoringTypes, id: \.self) { scoreType in
-                        Text(scoreType)
-                    }
-                }
-
-                Picker("Draft Type", selection: $draftType) {
-                    ForEach(draftTypes, id: \.self) { draft in
-                        Text(draft)
-                    }
-                }
+                .navigationButtonStyleCreateNewLeague()
             }
-
-            Button(action: {
-                createLeague(leagueName: leagueName, numberOfTeams: numberOfTeams, scoringType: scoringType, draftType: draftType)
-            }) {
-                Text("Create League")
-            }
+            .padding(.horizontal, 24)
+            .navigationBarTitle("Create a League", displayMode: .inline)
         }
-        .navigationTitle("Create a League")
+        .alert(isPresented: $showExistingLeagueAlert) {
+            Alert(title: Text("Error"),
+                  message: Text("This league name already exists, please try a different name."),
+                  dismissButton: .default(Text("Okay")))
+        }
+        .alert(isPresented: $leagueCreatedSuccessfully) {
+            Alert(title: Text("Success"),
+                  message: Text("League has been created successfully."),
+                  dismissButton: .default(Text("Okay")))
+        }
     }
 
-    func createLeague(leagueName: String, numberOfTeams: Int, scoringType: String, draftType: String) {
-        let newLeagueID = Firestore.firestore().collection("leagues").document().documentID
+    func createLeague(leagueName: String, numberOfTeams: Int) {
+        let leaguesCollection = Firestore.firestore().collection("leagues")
+        let query = leaguesCollection.whereField("leagueName", isEqualTo: leagueName)
 
-        Firestore.firestore().collection("leagues").document(newLeagueID).setData([
-            "leagueName": leagueName,
-            "numberOfTeams": numberOfTeams,
-            "scoringType": scoringType,
-            "draftType": draftType,
-            "teamIDs": [String]()
-        ]) { error in
+        query.getDocuments { (snapshot, error) in
             if let error = error {
-                print("Error adding league: \(error)")
+                print("Error getting leagues: \(error)")
             } else {
-                print("League added with ID: \(newLeagueID)")
+                if snapshot!.documents.count > 0 {
+                    self.showExistingLeagueAlert = true
+                } else {
+                    let newLeagueID = leaguesCollection.document().documentID
+                    let leagueData: [String : Any] = [
+                        "leagueID": newLeagueID,
+                        "leagueName": leagueName,
+                        "numberOfTeams": numberOfTeams,
+                        "teamIDs": [Auth.auth().currentUser?.uid ?? ""]
+                    ]
+
+                    leaguesCollection.document(newLeagueID).setData(leagueData) { error in
+                        if let error = error {
+                            print("Error adding league: \(error)")
+                        } else {
+                            print("League added with ID: \(newLeagueID)")
+                            self.addLeagueToUser(leagueID: newLeagueID, leagueName: leagueName)
+                            self.leagueCreatedSuccessfully = true
+                        }
+                    }
+                }
             }
         }
+    }
+
+    func addLeagueToUser(leagueID: String, leagueName: String) {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let userDocument = Firestore.firestore().collection("users").document(uid)
+        userDocument.updateData([
+            "leagueIDs": FieldValue.arrayUnion([leagueID]),
+            "leagueNames": FieldValue.arrayUnion([leagueName])
+        ]) { error in
+            if let error = error {
+                print("Error updating user document: \(error)")
+            } else {
+                print("User document successfully updated with new league")
+            }
+        }
+    }
+}
+
+// Different Style functions for this View to avoid redeclaration
+extension View {
+    func textFieldStyleCreateNewLeague() -> some View {
+        self
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding()
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.white).opacity(0.1))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white, lineWidth: 1))
+            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
+    }
+
+    func navigationButtonStyleCreateNewLeague() -> some View {
+        self
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding()
+            .background(Color.green)
+            .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 5)
     }
 }
 
