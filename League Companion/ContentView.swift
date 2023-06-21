@@ -6,6 +6,9 @@ struct ContentView: View {
     @State private var password: String = ""
     @State private var showMyLeagues = false
     @State private var showLoginView = false
+    @State private var showAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
 
     var body: some View {
         ZStack {
@@ -22,16 +25,22 @@ struct ContentView: View {
                     .padding()
             }
         }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text(alertTitle),
+                  message: Text(alertMessage),
+                  dismissButton: .default(Text("OK")))
+        }
+
     }
 
     var mainContent: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 30) {
             logoImage
             inputFields
             signUpButton
             logInButton
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 15)
         .foregroundColor(.white) // Set the default text color to white
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.opacity(0.3)) // Give the main content a semi-transparent background
@@ -43,13 +52,13 @@ struct ContentView: View {
         Image("logo")
             .resizable()
             .scaledToFit()
-            .frame(width: 150)
+            .frame(width: 300)
             .shadow(color: .black, radius: 10) // Add a shadow to the logo
     }
 
     var inputFields: some View {
         VStack(spacing: 16) {
-            TextField("Username", text: $username)
+            TextField("Email", text: $username)
                 .textFieldStyle()
 
             SecureField("Password", text: $password)
@@ -76,7 +85,9 @@ struct ContentView: View {
         Auth.auth().createUser(withEmail: username, password: password) { (authResult, error) in
             if let error = error {
                 print("Error occurred: \(error.localizedDescription)")
-                // TODO: Show alert to the user
+                alertTitle = "Error"
+                alertMessage = error.localizedDescription
+                showAlert = true
             } else if let user = authResult?.user {
                 print("User created successfully!")
                 createUserDocument(user: user)
@@ -84,6 +95,7 @@ struct ContentView: View {
             }
         }
     }
+
 
     func logInAction() {
         self.showLoginView = true
@@ -94,7 +106,7 @@ extension View {
     func textFieldStyle() -> some View {
         self
             .padding()
-            .background(Color.white.opacity(0.2))
+            .background(Color.white.opacity(0.6))
             .cornerRadius(8)
             .shadow(color: .black, radius: 5, x: 0, y: 5)
             .foregroundColor(.white)
@@ -111,6 +123,7 @@ extension View {
             .shadow(color: .black, radius: 5, x: 0, y: 5)
     }
 }
+
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
